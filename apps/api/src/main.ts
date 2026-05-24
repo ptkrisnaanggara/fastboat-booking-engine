@@ -12,6 +12,25 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.use((req: any, res: any, next: any) => {
+    if (!req.path.startsWith('/api/v1/admin')) {
+      return next();
+    }
+
+    const expectedKey = config.get<string>('ADMIN_API_KEY');
+    const providedKey = req.headers['x-admin-api-key'];
+
+    if (!expectedKey || providedKey !== expectedKey) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'Invalid admin API key',
+        error: 'Unauthorized',
+      });
+    }
+
+    return next();
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
