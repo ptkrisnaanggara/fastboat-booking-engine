@@ -62,7 +62,7 @@ export class AdminService {
     const table = this.table(resource);
     const { data, error } = await this.supabase.client
       .from(table)
-      .update({ ...payload, updated_at: new Date().toISOString() })
+      .update(payload)
       .eq('id', id)
       .select('*')
       .single();
