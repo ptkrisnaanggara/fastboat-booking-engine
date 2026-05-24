@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditLogService } from '../audit/audit-log.service';
 import { SupabaseService } from '../infrastructure/supabase.service';
 
 const ADMIN_TABLES = {
@@ -13,7 +14,10 @@ type AdminResource = keyof typeof ADMIN_TABLES;
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   private table(resource: string): string {
     if (!Object.prototype.hasOwnProperty.call(ADMIN_TABLES, resource)) {
@@ -55,10 +59,20 @@ export class AdminService {
       .single();
 
     if (error) throw error;
+
+    await this.auditLog.record({
+      action: 'create',
+      resource,
+      resourceId: data.id,
+      afterData: data,
+      metadata: { table },
+    });
+
     return data;
   }
 
   async update(resource: string, id: string, payload: Record<string, unknown>) {
+    const beforeData = await this.findOne(resource, id);
     const table = this.table(resource);
     const { data, error } = await this.supabase.client
       .from(table)
@@ -68,10 +82,21 @@ export class AdminService {
       .single();
 
     if (error || !data) throw new NotFoundException(`${resource} not found`);
+
+    await this.auditLog.record({
+      action: 'update',
+      resource,
+      resourceId: id,
+      beforeData,
+      afterData: data,
+      metadata: { table },
+    });
+
     return data;
   }
 
   async deactivate(resource: string, id: string) {
+    const beforeData = await this.findOne(resource, id);
     const table = this.table(resource);
     const { data, error } = await this.supabase.client
       .from(table)
@@ -81,6 +106,16 @@ export class AdminService {
       .single();
 
     if (error || !data) throw new NotFoundException(`${resource} not found`);
+
+    await this.auditLog.record({
+      action: 'deactivate',
+      resource,
+      resourceId: id,
+      beforeData,
+      afterData: data,
+      metadata: { table },
+    });
+
     return data;
   }
 }
