@@ -109,6 +109,19 @@ export class BookingService {
       throw new BadRequestException(`Booking cannot be paid from status ${booking.status}`);
     }
 
+    await this.supabase.client.from('payments').insert({
+      booking_id: id,
+      provider: 'manual',
+      provider_reference: `MANUAL-${nanoid(12).toUpperCase()}`,
+      amount: booking.total_amount,
+      currency: booking.currency,
+      status: 'PAID',
+      paid_at: new Date().toISOString(),
+      raw_payload: {
+        source: 'admin-mark-paid',
+      },
+    });
+
     const updated = await this.supabase.updateOne('bookings', id, {
       status: 'PAID',
       updated_at: new Date().toISOString(),
@@ -117,6 +130,8 @@ export class BookingService {
     await this.events.publish('booking.paid', {
       id,
       bookingCode: booking.booking_code,
+      amount: booking.total_amount,
+      currency: booking.currency,
     });
 
     return updated;
