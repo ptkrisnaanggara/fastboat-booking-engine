@@ -7,7 +7,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
-  app.enableCors({ origin: true, credentials: true });
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,7 +21,9 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api/v1');
-  await app.listen(config.get<number>('API_PORT', 3000));
+
+  const port = config.get<number>('API_PORT', 3000);
+  await app.listen(port);
 }
 
 bootstrap();

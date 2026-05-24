@@ -1,0 +1,14 @@
+{
+  "name": "fastboat-booking-engine",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace apps/api run start:dev",
+    "dev:web": "npm --workspace apps/web run dev",
+    "lint": "npm --workspaces run lint",
+    "build": "npm --workspaces run build"
+  }
+}
